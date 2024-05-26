@@ -75,10 +75,10 @@ public class QLearner extends Artifact {
 
       // Initialize S
       lab.performAction((int) Math.ceil(Math.random()* actionCount));
+      int currState = lab.readCurrentState();
 
       // loop for each step of episode
       while (true) {
-        int currState = lab.readCurrentState();
         
         // All A from S
         List<Integer> applicableActions = lab.getApplicableActions(currState);
@@ -90,13 +90,14 @@ public class QLearner extends Artifact {
 
         int newState = lab.readCurrentState();
 
-        if (goalStates.contains(currState)) {
-          currentQTable[currState][bestAction] = currentQTable[currState][bestAction] + alpha * (reward + gamma * futureRewards - currentQTable[currState][bestAction]);
-          break;
-        } 
-        else {
-          currentQTable[currState][bestAction] = currentQTable[currState][bestAction] + alpha * (-reward + gamma * futureRewards - currentQTable[currState][bestAction]);
-        }
+        // Q(S, A) <- Q(S, A) + alpha * (Reward + gamma * max(S_prime, a) - Q(S, A))
+
+
+        // S <- S_prime
+        currState = newState;
+
+        // S terminal
+        if (goalStates.contains(currState)) break;
       }
     }
 
