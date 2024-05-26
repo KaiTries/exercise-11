@@ -5,6 +5,7 @@ import java.util.logging.*;
 import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.OpFeedbackParam;
+import jason.stdlib.foreach;
 
 public class QLearner extends Artifact {
 
@@ -62,8 +63,63 @@ public class QLearner extends Artifact {
     Double epsilon = Double.valueOf(epsilonObj.toString());
     Integer reward = Integer.valueOf(rewardObj.toString());
   
+    // get all possible goal states from goal description
+    var goalStates = lab.getCompatibleStates(Arrays.asList(goalDescription));
+
+    // initialize Q(s, a) arbitrarly
+    double[][] currentQTable = initializeQTable();
+
+    // loop for each episode
+    for (int i = episodes; i < goalDescription.length; i++) {
+
+
+      // Initialize S
+      lab.performAction((int) Math.ceil(Math.random()* actionCount));
+
+      // loop for each step of episode
+      while (true) {
+        int currState = lab.readCurrentState();
+        
+        // All A from S
+        List<Integer> applicableActions = lab.getApplicableActions(currState);
+
+        // Choose A from S using policy derived from Q (e-greedy)
+        int bestAction = getActionGreedy(currentQTable, applicableActions, currState, epsilon);
+        
+        lab.performAction(bestAction);
+
+        int newState = lab.readCurrentState();
+
+        if (goalStates.contains(currState)) {
+          currentQTable[currState][bestAction] = currentQTable[currState][bestAction] + alpha * (reward + gamma * futureRewards - currentQTable[currState][bestAction]);
+          break;
+        } 
+        else {
+          currentQTable[currState][bestAction] = currentQTable[currState][bestAction] + alpha * (-reward + gamma * futureRewards - currentQTable[currState][bestAction]);
+        }
+      }
+    }
+
   }
 
+  public int getActionGreedy(double[][] currentQTable, List<Integer> availableActions, int state, Double epsilon) {
+    double greedy = Math.random();
+    if (greedy > epsilon) {
+      int randomIdx = (int) (Math.random() * availableActions.size());
+      return availableActions.get(randomIdx);
+    }
+    int highestAction = availableActions.get(0);
+    double highestReward = currentQTable[state][highestAction];
+    for (int i = 1; i < availableActions.size(); i++) {
+      if (currentQTable[state][availableActions.get(i)] > highestReward) {
+        highestReward = currentQTable[state][availableActions.get(i)];
+        highestAction = availableActions.get(i);
+      }
+      
+    }
+    return highestAction;
+  }
+  
 /**
 * Returns information about the next best action based on a provided state and the QTable for
 * a goal description. The returned information can be used by agents to invoke an action 
