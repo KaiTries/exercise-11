@@ -90,9 +90,16 @@ public class QLearner extends Artifact {
 
         int newState = lab.readCurrentState();
 
+
+        // Q(S, A)
+        double currQ = currentQTable[currState][bestAction];
+
+        // Q(S_prime, A)
+        double primeQ = maxRewardQPrime(currentQTable, newState);
+
         // Q(S, A) <- Q(S, A) + alpha * (Reward + gamma * max(S_prime, a) - Q(S, A))
-
-
+        currentQTable[currState][bestAction] = currQ + alpha * (reward + gamma * primeQ - currQ);
+ 
         // S <- S_prime
         currState = newState;
 
@@ -101,6 +108,12 @@ public class QLearner extends Artifact {
       }
     }
 
+  }
+
+  public double maxRewardQPrime(double[][] currentQTable, int state) {
+
+
+    return 0.0;
   }
 
   public int getActionGreedy(double[][] currentQTable, List<Integer> availableActions, int state, Double epsilon) {
