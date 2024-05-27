@@ -43,8 +43,8 @@ task_requirements([2,3]).
   
   // example use of the getActionFromState operation of the QLearner artifact
   // relevant for Task 2.3
-  getActionFromState([1,1], [0, 0, false, false, false, false, 3], ActionTag, PayloadTags, Payload);
+  //getActionFromState([1,1], [0, 0, false, false, false, false, 3], ActionTag, PayloadTags, Payload);
 
   // example use of the invokeAction operation of the ThingArtifact 
   //invokeAction(ActionTag, PayloadTags, Payload)
-  .
+  calculateQ([Z1Level, Z2Level],1000, 0.1, 0.9, 0.1, 100).

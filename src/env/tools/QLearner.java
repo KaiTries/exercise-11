@@ -6,6 +6,7 @@ import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.OpFeedbackParam;
 import jason.stdlib.foreach;
+import jason.stdlib.max;
 
 public class QLearner extends Artifact {
 
@@ -62,34 +63,51 @@ public class QLearner extends Artifact {
     Double gamma = Double.valueOf(gammaObj.toString());
     Double epsilon = Double.valueOf(epsilonObj.toString());
     Integer reward = Integer.valueOf(rewardObj.toString());
-  
+
+    // transform goalDesc to Integer array 
+    for (int i = 0; i < goalDescription.length; i++) {
+        goalDescription[i] = Integer.valueOf(goalDescription[i].toString());
+    }
+
     // get all possible goal states from goal description
     var goalStates = lab.getCompatibleStates(Arrays.asList(goalDescription));
 
     // initialize Q(s, a) arbitrarly
     double[][] currentQTable = initializeQTable();
 
+
     // loop for each episode
-    for (int i = episodes; i < goalDescription.length; i++) {
+    for (int i = 0; i < episodes; i++) {
 
 
       // Initialize S
-      lab.performAction((int) Math.ceil(Math.random()* actionCount));
+      for (int j = 0; j < 100; j++) {
+        lab.performAction((int) (Math.random() * actionCount - 1));
+      }
       int currState = lab.readCurrentState();
 
+      System.out.println("Goal State: " + goalStates);
+      System.out.println("Initial State: " + currState);
       // loop for each step of episode
       while (true) {
-        
+        System.out.println("Current State: " + currState);
+
         // All A from S
         List<Integer> applicableActions = lab.getApplicableActions(currState);
 
+
+
         // Choose A from S using policy derived from Q (e-greedy)
         int bestAction = getActionGreedy(currentQTable, applicableActions, currState, epsilon);
-        
         lab.performAction(bestAction);
-
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
+        // S_prime
         int newState = lab.readCurrentState();
-
 
         // Q(S, A)
         double currQ = currentQTable[currState][bestAction];
@@ -98,28 +116,44 @@ public class QLearner extends Artifact {
         double primeQ = maxRewardQPrime(currentQTable, newState);
 
         // Q(S, A) <- Q(S, A) + alpha * (Reward + gamma * max(S_prime, a) - Q(S, A))
-        currentQTable[currState][bestAction] = currQ + alpha * (reward + gamma * primeQ - currQ);
  
         // S <- S_prime
         currState = newState;
 
         // S terminal
-        if (goalStates.contains(currState)) break;
+        if (goalStates.contains(currState)) {
+          currentQTable[currState][bestAction] = currQ + alpha * (reward + gamma * primeQ - currQ);
+          break;
+        }
+        currentQTable[currState][bestAction] = currQ + alpha * (0 + gamma * primeQ - currQ);
       }
     }
-
+    // update q tables
+    // set goal descriptions as [a, b] -> 10 * a + 1 * b
+    int goalNum = ((int) goalDescription[0]) * 10 + ((int) goalDescription[1]);
+    qTables.put(goalNum, currentQTable);
   }
 
   public double maxRewardQPrime(double[][] currentQTable, int state) {
+    double maxReward = 0.0;
 
+    List<Integer> applicableActions = lab.getApplicableActions(state);
 
-    return 0.0;
+    for (Integer action : applicableActions) {
+      if(currentQTable[state][action] > maxReward) {
+        maxReward = currentQTable[state][action];
+      }
+    }
+
+    return maxReward;
   }
 
   public int getActionGreedy(double[][] currentQTable, List<Integer> availableActions, int state, Double epsilon) {
+    System.out.println("Available actions for state " + state + ": " + availableActions);
     double greedy = Math.random();
-    if (greedy > epsilon) {
+    if (greedy < epsilon) {
       int randomIdx = (int) (Math.random() * availableActions.size());
+      System.out.println("Choosing Greedy: " + availableActions.get(randomIdx));
       return availableActions.get(randomIdx);
     }
     int highestAction = availableActions.get(0);
@@ -131,6 +165,7 @@ public class QLearner extends Artifact {
       }
       
     }
+    System.out.println("Choosing action with highest reward of " + highestReward);
     return highestAction;
   }
   
@@ -151,17 +186,28 @@ public class QLearner extends Artifact {
       OpFeedbackParam<Object[]> nextBestActionPayload) {
          
         // remove the following upon implementing Task 2.3!
+        int goalNum = ((int) goalDescription[0]) * 10 + ((int) goalDescription[1]);
+        double[][] qMatrix = qTables.get(goalNum);
 
-        // sets the semantic annotation of the next best action to be returned 
-        nextBestActionTag.set("http://example.org/was#SetZ1Light");
+        int currenState = lab.getCompatibleStates(Arrays.asList(currentStateDescription)).get(0);
+        
+        var actionsForState = qMatrix[currenState];
 
-        // sets the semantic annotation of the payload of the next best action to be returned 
-        Object payloadTags[] = { "Z1Light" };
-        nextBestActionPayloadTags.set(payloadTags);
+        double bestAction = 0;
+        int best = 0;
 
-        // sets the payload of the next best action to be returned 
-        Object payload[] = { true };
-        nextBestActionPayload.set(payload);
+        for (int i = 0; i < actionsForState.length; i++) {
+          if (actionsForState[i] > bestAction) {
+            bestAction = actionsForState[i];
+            best = i;
+          }
+        }
+
+        var action = lab.getAction(best);
+
+        nextBestActionTag.set(action.getActionTag());
+        nextBestActionPayloadTags.set(action.getPayloadTags());
+        nextBestActionPayload.set(action.getPayload());
       }
 
     /**
