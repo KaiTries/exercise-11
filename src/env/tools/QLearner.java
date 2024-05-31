@@ -64,13 +64,10 @@ public class QLearner extends Artifact {
     Double epsilon = Double.valueOf(epsilonObj.toString());
     Integer reward = Integer.valueOf(rewardObj.toString());
 
-    // transform goalDesc to Integer array 
-    for (int i = 0; i < goalDescription.length; i++) {
-        goalDescription[i] = Integer.valueOf(goalDescription[i].toString());
-    }
 
     // get all possible goal states from goal description
     var goalStates = lab.getCompatibleStates(Arrays.asList(goalDescription));
+    LOGGER.info("Goal States: "+ goalStates);
 
     // initialize Q(s, a) arbitrarly
     double[][] currentQTable = initializeQTable();
@@ -79,33 +76,22 @@ public class QLearner extends Artifact {
     // loop for each episode
     for (int i = 0; i < episodes; i++) {
 
-
-      // Initialize S
-      for (int j = 0; j < 100; j++) {
-        lab.performAction((int) (Math.random() * actionCount - 1));
-      }
+      // Initialize S randomize state by doing 100 random actions
+      for (int j = 0; j < 10; j++) lab.performAction((int) (Math.random() * lab.getActionCount()));
       int currState = lab.readCurrentState();
 
-      System.out.println("Goal State: " + goalStates);
-      System.out.println("Initial State: " + currState);
+      LOGGER.info("Iteration: " + i + " - Initial State: "+ currState);
+
       // loop for each step of episode
-      while (true) {
-        System.out.println("Current State: " + currState);
+      while (!goalStates.contains(currState)) {
 
         // All A from S
         List<Integer> applicableActions = lab.getApplicableActions(currState);
 
-
-
         // Choose A from S using policy derived from Q (e-greedy)
         int bestAction = getActionGreedy(currentQTable, applicableActions, currState, epsilon);
         lab.performAction(bestAction);
-        try {
-          Thread.sleep(100);
-        } catch (InterruptedException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
+
         // S_prime
         int newState = lab.readCurrentState();
 
@@ -120,18 +106,16 @@ public class QLearner extends Artifact {
         // S <- S_prime
         currState = newState;
 
+        // reward val
+        int rewardVal = goalStates.contains(currState) ? reward : -1;
         // S terminal
-        if (goalStates.contains(currState)) {
-          currentQTable[currState][bestAction] = currQ + alpha * (reward + gamma * primeQ - currQ);
-          break;
-        }
-        currentQTable[currState][bestAction] = currQ + alpha * (0 + gamma * primeQ - currQ);
+        currentQTable[currState][bestAction] = currQ + alpha * (rewardVal + gamma * primeQ - currQ);
       }
     }
     // update q tables
-    // set goal descriptions as [a, b] -> 10 * a + 1 * b
-    int goalNum = ((int) goalDescription[0]) * 10 + ((int) goalDescription[1]);
-    qTables.put(goalNum, currentQTable);
+    int goalHash = 10 * ((int)goalDescription[0]) + ((int)goalDescription[1]);
+    qTables.put(goalHash, currentQTable);
+    for (int j = 0; j < 10; j++) lab.performAction((int) (Math.random() * lab.getActionCount()));
   }
 
   public double maxRewardQPrime(double[][] currentQTable, int state) {
@@ -149,24 +133,28 @@ public class QLearner extends Artifact {
   }
 
   public int getActionGreedy(double[][] currentQTable, List<Integer> availableActions, int state, Double epsilon) {
-    System.out.println("Available actions for state " + state + ": " + availableActions);
     double greedy = Math.random();
     if (greedy < epsilon) {
       int randomIdx = (int) (Math.random() * availableActions.size());
-      System.out.println("Choosing Greedy: " + availableActions.get(randomIdx));
       return availableActions.get(randomIdx);
     }
-    int highestAction = availableActions.get(0);
-    double highestReward = currentQTable[state][highestAction];
+    // we check for the actions with highest reward
+    // if multiple we choose randomly
+    List<Integer> highestRewardActions = new ArrayList<>();
+    highestRewardActions.add(availableActions.get(0));
+    double highestReward = currentQTable[state][highestRewardActions.get(0)];
     for (int i = 1; i < availableActions.size(); i++) {
       if (currentQTable[state][availableActions.get(i)] > highestReward) {
         highestReward = currentQTable[state][availableActions.get(i)];
-        highestAction = availableActions.get(i);
+        highestRewardActions.clear();
+        highestRewardActions.add(availableActions.get(i));
+      } else if (currentQTable[state][availableActions.get(i)] == highestReward) {
+          highestRewardActions.add(availableActions.get(i));
       }
       
     }
-    System.out.println("Choosing action with highest reward of " + highestReward);
-    return highestAction;
+    int randomIdx = (int) (Math.random() * highestRewardActions.size());
+    return highestRewardActions.get(randomIdx);
   }
   
 /**
@@ -184,10 +172,10 @@ public class QLearner extends Artifact {
   public void getActionFromState(Object[] goalDescription, Object[] currentStateDescription,
       OpFeedbackParam<String> nextBestActionTag, OpFeedbackParam<Object[]> nextBestActionPayloadTags,
       OpFeedbackParam<Object[]> nextBestActionPayload) {
-         
-        // remove the following upon implementing Task 2.3!
-        int goalNum = ((int) goalDescription[0]) * 10 + ((int) goalDescription[1]);
-        double[][] qMatrix = qTables.get(goalNum);
+        
+        int goalHash = 10 * Integer.valueOf(goalDescription[0].toString()) + Integer.valueOf(goalDescription[1].toString());
+
+        double[][] qMatrix = qTables.get(goalHash);
 
         int currenState = lab.getCompatibleStates(Arrays.asList(currentStateDescription)).get(0);
         
@@ -240,4 +228,16 @@ public class QLearner extends Artifact {
     }
     return qTable;
   }
+
+@OPERATION
+public void discretizeLightLevel(Object lightLevel, OpFeedbackParam<Integer> discretizedLightLevel) {
+  double value = ((Number) lightLevel).doubleValue();
+  discretizedLightLevel.set(lab.discretizeLightLevel(value));
+}
+
+@OPERATION
+public void discretizeSunshine(Object sunshine, OpFeedbackParam<Integer> discretizedSunshine) {
+  double value = ((Number) sunshine).doubleValue();
+  discretizedSunshine.set(lab.discretizeSunshine(value));
+}
 }

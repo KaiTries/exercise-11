@@ -1,0 +1,53 @@
+\documentclass[11pt]{article}
+
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\usepackage{times} % Times New Roman font
+\usepackage{hyperref} % For hyperlinks
+\usepackage{graphicx} % For including images
+\usepackage{listings}
+\usepackage{textcomp}
+
+\usepackage{xcolor} % Required for setting custom colors
+
+\lstset{
+  backgroundcolor=\color{lightgray}, % Set the background color
+  frame=single, % Adds a frame around the code
+  numbers=left, % Line numbers on the left
+  numberstyle=\tiny, % Line numbers styling
+  basicstyle=\ttfamily\small, % Set the font style
+  keywordstyle=\color{blue}, % Set the color for keywords
+  commentstyle=\color{green}, % Set the color for comments
+  stringstyle=\color{red}, % Set the color for strings
+  breaklines=true, % Wrap long lines
+  showstringspaces=false, % Don't show spaces in strings as special character
+}
+
+
+\title{Exercise 11}
+\author{Kai Schultz}
+\date{May 31. 2024} % Or specify a date
+
+\begin{document}
+
+\maketitle
+I forked the GitHub repo so all the code can be found on here: \href{https://github.com/KaiTries/exercise-11}{Github}.
+\section*{Task 1 (2 points): Learning the Q Way}
+\subsection*{States, Actions and Rewards}
+The state space should capture all relevant information needed to make a decision. In our case we have 7 different factors that should be included in the state.
+First we have the weather station that reports the sunshine level outside. Then we have the two light sensors inside, that report the illuminance level on a scale of 0 - 3.
+Then we have the status of the two lights and the two blinds. 
+So we can find the total state space by just multiplying each possible state for each factor: $4^3$ (for the 4 possible states for the two light sensors inside, and the converted sunshine value) * $2^4$ (two lights that can be either on / off and two blinds that are either up / down). Therefore we have a total state space of 1024. Each state should then have the correct value for all 7 factors. As given in the later implementation, the most intuitive way to design this is to just create an array where each element represents the value of that factor for the given state. \\
+Actions represent what the agent can actually influence in the environment. Here we can see. That we can turn the lights on / off and we can put the blinds up / down. Since we again have 2 lights and 2 blinds, we can do a total of 8 different actions. Technically the action space would be $2^4 = 16$, but since the actions are mutually exclusive (can either turn off when it is on or turn on when it is off), we have an actual action space of 8.\\
+The reward function, should reflect the goal of achieving the wanted light levels, meaning that once we have achieved a state that satisfies the light levels, we give a reward. In my implementation I used 100 as a reward, since it is quite a big state space and this way the paths to valid end states propagate faster. If we get to a state that is not an end state, I simply set -1 as the reward, so that if we end up at the same point again, we choose a different path and do not get  a circular behaviour. \\
+Arguments for RL in this use case:\\
+Since the states and actions are clearly definable and reward behaviour can be sensibly applied to this use case, it seems like a good case for reinforcement learning. Since the environment is ever changing with different light levels and the requirements  for the wanted light level also can change over time, but the learnings can still be applied, because the way illuminance changes when you put the blinds down is always the same, it indicates that RL is a good fit. Additionally, if there were bigger changes in the environment, the RL agent would adapt through the changing Q values. \\
+Arguments against RL in this use case:\\
+The state space is quite large, currently it is doable because the illuminance level is condensed into only 4 ranks, but the more accurate the illuminance level gets, the larger the state space. A problem I already see though, is in the implementation, since we have to query an http endpoint, the training can overload the endpoint. So the sheer volume is already a slight hinderance. And the general challenge with RL is finding the correct values for exploration vs exploitation, the discount factor, the learning factor and even the reward values. Finding the correct values there can be very time consuming, and costly if not implemented correctly. Alternatives to RL could be simpler rule-based systems that just react on certain thresholds.\\
+Handling additional constraint:\\
+To enable our model to work with this constraint, we need to expand the state and action spaces. First we would need to add a human boolean to the state, so that we would know if a human is currently in the lab. Then we would need to modify the available actions for states where the outdoor light level is 3 and a human is present. Here we should only make these actions available, that result in a state where the blinds are down. This we we can guarantee, that if a human is present and it is too bright outside, all actions will result with the blinds being down.
+\section*{Task 2 (8 points): Your Q-Learning Program in a simulated environment}
+\section*{Bonus Task (3 points): Your Q-Learning Program in a real environment!}
+
+\end{document}

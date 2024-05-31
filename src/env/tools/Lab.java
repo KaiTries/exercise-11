@@ -179,6 +179,12 @@ public class Lab extends LearningEnvironment {
 
       List<Integer> compatibleStates = new ArrayList<>();
       List<List<Integer>> stateList = new ArrayList<>(stateSpace);
+      
+      for(int i = 0; i < stateDescription.size(); i++) {
+        if (stateDescription.get(i) instanceof Byte) {
+          stateDescription.set(i, ((Byte) stateDescription.get(i)).intValue());
+        }
+      }
 
       for (int i=0; i<stateList.size(); i++) {
         List<Integer> state = stateList.get(i);
@@ -195,7 +201,6 @@ public class Lab extends LearningEnvironment {
 
         if (Collections.indexOfSubList(substates, stateDescription) != -1){
           compatibleStates.add(i);
-          System.out.println(state);
         };
       }
       return compatibleStates;
@@ -344,7 +349,7 @@ public class Lab extends LearningEnvironment {
     * lux in [100,300) -> level 2
     * lux >= 300 -> level 3
     */
-    private int discretizeLightLevel(Double value) {
+    public int discretizeLightLevel(Double value) {
       if (value < 50) {
         return 0;
       } else if (value < 100) {
@@ -362,7 +367,7 @@ public class Lab extends LearningEnvironment {
     * lux in [200,700) -> level 2
     * lux >= 700 -> level 3
     */
-    private int discretizeSunshine(Double value) {
+    public int discretizeSunshine(Double value) {
       if (value < 50) {
         return 0;
       } else if (value < 200) {
