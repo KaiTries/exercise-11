@@ -115,7 +115,6 @@ public class QLearner extends Artifact {
     // update q tables
     int goalHash = 10 * ((int)goalDescription[0]) + ((int)goalDescription[1]);
     qTables.put(goalHash, currentQTable);
-    for (int j = 0; j < 10; j++) lab.performAction((int) (Math.random() * lab.getActionCount()));
   }
 
   public double maxRewardQPrime(double[][] currentQTable, int state) {
