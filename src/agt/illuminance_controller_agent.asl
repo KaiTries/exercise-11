@@ -96,7 +96,7 @@ real(false).
   // else we get the next best action and invoke it. Then we wait and execute this plan again.
   } else {
       getActionFromState([Z1Level,Z2Level], [DisZ1,DisZ2,Z1LightRead,Z2LightRead,Z1BlindsRead,Z2BlindsRead,Sunshine], ActionTag, PayloadTags, Payload)[artifact_id(QLArtId)];
-      .print("Perform action => ActionTag=", ActionTag, " PayloadTags=", PayloadTags, " Payload=", Payload);
+      .print("Perform action: ", ActionTag, " PayloadTags: ", PayloadTags, " Payload: ", Payload);
       invokeAction(ActionTag, PayloadTags, Payload)[artifact_id(LabArtId)];
       .wait(5000);
       !achieveTask(Z1Level, Z2Level, LabArtId);
