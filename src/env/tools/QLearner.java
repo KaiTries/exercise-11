@@ -5,8 +5,6 @@ import java.util.logging.*;
 import cartago.Artifact;
 import cartago.OPERATION;
 import cartago.OpFeedbackParam;
-import jason.stdlib.foreach;
-import jason.stdlib.max;
 
 public class QLearner extends Artifact {
 
